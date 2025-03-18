@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "Projeto de estudo de Clean Architecture com Node.js",
   "devDependencies": {
-    "git-commit-msg-linter": "^5.0.8"
+    "@types/node": "^22.13.10",
+    "git-commit-msg-linter": "^5.0.8",
+    "typescript": "^5.8.2"
   }
 }
