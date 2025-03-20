@@ -1,20 +1,21 @@
-import { InvalidParamError } from "../errors/invalid-param-error";
-import { MissingParamError } from "../errors/missing-param-error";
-import { ServerError } from "../errors/server-errory";
-import { EmailValidator } from "../protocols/email-validator";
+import { InvalidParamError, MissingParamError, ServerError } from "../errors";
+import { EmailValidator } from "../protocols";
 import { SignUpController } from "./signup";
 
 interface SutTypes {
   sut: SignUpController;
   emailValidatorStub: EmailValidator;
 }
-const makeSut = (): SutTypes => {
+const makeEmailValidatorStub = (): EmailValidator => {
   class EmailValidatorStub implements EmailValidator {
     isValid(email: string): boolean {
       return true;
     }
   }
-  const emailValidatorStub = new EmailValidatorStub();
+  return new EmailValidatorStub();
+};
+const makeSut = (): SutTypes => {
+  const emailValidatorStub = makeEmailValidatorStub();
   const sut = new SignUpController(emailValidatorStub);
 
   return {
@@ -89,6 +90,25 @@ describe("SignUpController", () => {
     );
   });
 
+  test("returns 400 if no password confirmation is fails", async () => {
+    const { sut } = makeSut();
+
+    const httreqest = {
+      body: {
+        name: "any-name",
+        email: "any_email@email.com",
+        password: "any_password",
+        passwordConfirmation: "invalid_password",
+      },
+    };
+
+    const httpResponse = await sut.handle(httreqest);
+    expect(httpResponse.statusCode).toBe(400);
+    expect(httpResponse.body).toEqual(
+      new InvalidParamError("passwordConfirmation")
+    );
+  });
+
   test("returns 400 if an invalid email is provided", async () => {
     const { sut, emailValidatorStub } = makeSut();
     jest.spyOn(emailValidatorStub, "isValid").mockReturnValueOnce(false);
@@ -123,13 +143,11 @@ describe("SignUpController", () => {
   });
 
   test("should return 500 if EmailValidator throws", async () => {
-    class EmailValidatorStub implements EmailValidator {
-      isValid(email: string): boolean {
-        throw new Error();
-      }
-    }
-    const emailValidatorStub = new EmailValidatorStub();
-    const sut = new SignUpController(emailValidatorStub);
+    const { sut, emailValidatorStub } = makeSut();
+
+    jest.spyOn(emailValidatorStub, "isValid").mockImplementationOnce(() => {
+      throw new Error();
+    });
 
     const httreqest = {
       body: {
