@@ -1,8 +1,15 @@
-import { AddAccount, AddAccountModel } from "../../domain/usecases/ad-account";
-import { AccountModel } from "../../domain/usecases/models/account";
-import { InvalidParamError, MissingParamError, ServerError } from "../errors";
-import { EmailValidator } from "../protocols";
-import { SignUpController } from "./signup";
+import {
+  InvalidParamError,
+  MissingParamError,
+  ServerError,
+} from "../../errors";
+import { SignUpController } from "../signup/signup";
+import {
+  AccountModel,
+  AddAccount,
+  AddAccountModel,
+  EmailValidator,
+} from "./signup-protocols";
 
 const makeEmailValidatorStub = (): EmailValidator => {
   class EmailValidatorStub implements EmailValidator {
@@ -19,7 +26,7 @@ const makeAddAccountStub = (): AddAccount => {
       const fakeAccount = {
         id: "valid_id",
         name: "valid_name",
-        email: "valid_email",
+        email: "valid_email@email.com",
         password: "valid_password",
       };
       return fakeAccount;
@@ -201,6 +208,50 @@ describe("SignUpController", () => {
       name: "any-name",
       email: "any_email@email.com",
       password: "any_password",
+    });
+  });
+
+  test("should return 500 if AddAccouunt throws", async () => {
+    const { sut, addAccountStub } = makeSut();
+
+    jest.spyOn(addAccountStub, "add").mockImplementationOnce(() => {
+      throw new Error();
+    });
+
+    const httreqest = {
+      body: {
+        name: "any-name",
+        email: "any_email@email.com",
+        password: "any_password",
+        passwordConfirmation: "any_password",
+      },
+    };
+
+    const httpResponse = await sut.handle(httreqest);
+    expect(httpResponse.statusCode).toBe(500);
+    expect(httpResponse.body).toEqual(new ServerError());
+  });
+
+  test("should return 200 if valid data is provided", async () => {
+    const { sut, emailValidatorStub } = makeSut();
+
+    const httRequest = {
+      body: {
+        id: "valid_id",
+        name: "valid_name",
+        email: "valid_email@email.com",
+        password: "valid_password",
+        passwordConfirmation: "valid_password",
+      },
+    };
+
+    const httpResponse = sut.handle(httRequest);
+    expect(httpResponse.statusCode).toBe(200);
+    expect(httpResponse.body).toEqual({
+      id: "valid_id",
+      name: "valid_name",
+      email: "valid_email@email.com",
+      password: "valid_password",
     });
   });
 });
