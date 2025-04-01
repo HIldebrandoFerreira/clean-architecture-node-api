@@ -22,14 +22,14 @@ const makeEmailValidatorStub = (): EmailValidator => {
 
 const makeAddAccountStub = (): AddAccount => {
   class AddAccountStub implements AddAccount {
-    add(account: AddAccountModel): AccountModel {
+    async add(account: AddAccountModel): Promise<AccountModel> {
       const fakeAccount = {
         id: "valid_id",
         name: "valid_name",
         email: "valid_email@email.com",
         password: "valid_password",
       };
-      return fakeAccount;
+      return new Promise((resolve) => resolve(fakeAccount));
     }
   }
   return new AddAccountStub();
@@ -215,7 +215,7 @@ describe("SignUpController", () => {
     const { sut, addAccountStub } = makeSut();
 
     jest.spyOn(addAccountStub, "add").mockImplementationOnce(() => {
-      throw new Error();
+      return new Promise((resolve, reject) => reject(new Error()));
     });
 
     const httreqest = {
@@ -245,7 +245,7 @@ describe("SignUpController", () => {
       },
     };
 
-    const httpResponse = sut.handle(httRequest);
+    const httpResponse = await sut.handle(httRequest);
     expect(httpResponse.statusCode).toBe(200);
     expect(httpResponse.body).toEqual({
       id: "valid_id",
