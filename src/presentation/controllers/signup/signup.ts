@@ -1,5 +1,5 @@
 import { InvalidParamError, MissingParamError } from "../../errors";
-import { badRequest, ok, serverError } from "../../helpers/http";
+import { badRequest, ok, serverError } from "../../helpers/http-helpers";
 import {
   AddAccount,
   Controller,
